@@ -114,14 +114,14 @@ bool BTLE::advertise( const char* name, void* buf, uint8_t buflen ) {
 	// add "complete name" chunk
 	outbuf[pls++] = namelen+1;  // chunk size
 	outbuf[pls++] = 0x09;       // chunk type
-	for (int i = 0; i < namelen; i++)
+	for (uint8_t i = 0; i < namelen; i++)
 		outbuf[pls++] = name[i];
 
 	// add custom data, if applicable
 	if (buflen > 0) {
 		outbuf[pls++] = buflen+1;  // chunk size
 		outbuf[pls++] = 0xFF;      // chunk type
-		for (int i = 0; i < buflen; i++)
+		for (uint8_t i = 0; i < buflen; i++)
 			outbuf[pls++] = ((uint8_t*)buf)[i];
 	}
 
@@ -163,11 +163,11 @@ bool BTLE::listen( uint8_t** buf, uint8_t* len ) {
 		done = radio->read( inbuf, sizeof(inbuf) );
 
 		// decode: swap bit order, un-whiten
-		for (int i = 0; i < sizeof(inbuf); i++) inbuf[i] = swapbits(inbuf[i]);
+		for (uint8_t i = 0; i < sizeof(inbuf); i++) inbuf[i] = swapbits(inbuf[i]);
 		btLeWhiten( inbuf, sizeof(inbuf), btLeWhitenStart( channel[current] ) );
 		
 		Serial.print("Got payload: ");
-		for (int i = 0; i < 32; i++) { Serial.print(inbuf[i],HEX); Serial.print(" "); }
+		for (uint8_t i = 0; i < 32; i++) { Serial.print(inbuf[i],HEX); Serial.print(" "); }
 		Serial.println("");
 
 		// size is w/o header+CRC -> add 2 bytes header
@@ -177,7 +177,7 @@ bool BTLE::listen( uint8_t** buf, uint8_t* len ) {
 
 		// calculate & compare CRC
 		btLeCrc( inbuf, total_size, crc );
-		for (int i = 0; i < 3; i++)
+		for (uint8_t i = 0; i < 3; i++)
 			if (inbuf[total_size+i] != crc[i])
 				return false;
 
