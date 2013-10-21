@@ -27,9 +27,7 @@ class BTLE {
 		void hopChannel();              // hop to the next channel
 
 		bool advertise( const char* name, void* buf, uint8_t len ); // broadcast an advertisement packet
-		bool listen( void* buf, uint8_t* len );   // listen for advertisement packets
-
-	protected:
+		bool listen( uint8_t** buf, uint8_t* len );   // listen for advertisement packets
 
 	private:
 

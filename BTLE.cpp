@@ -146,7 +146,7 @@ bool BTLE::advertise( const char* name, void* buf, uint8_t buflen ) {
 }
 
 // listen for advertisement packets
-bool BTLE::listen( void* buf, uint8_t* len ) {
+bool BTLE::listen( uint8_t** buf, uint8_t* len ) {
 
 	radio->startListening();
 	delay(20);
@@ -155,24 +155,38 @@ bool BTLE::listen( void* buf, uint8_t* len ) {
 		return false;
 
 	bool done = false;
+	uint8_t total_size = 0;
+
 	while (!done) {
 
 		// fetch the payload, and check if there are more left
 		done = radio->read( inbuf, sizeof(inbuf) );
-		
-		for (int i = 0; i < 32; i++)
-			inbuf[i] = swapbits(inbuf[i]);
 
+		// decode: swap bit order, un-whiten
+		for (int i = 0; i < sizeof(inbuf); i++) inbuf[i] = swapbits(inbuf[i]);
 		btLeWhiten( inbuf, sizeof(inbuf), btLeWhitenStart( channel[current] ) );
 		
 		Serial.print("Got payload: ");
 		for (int i = 0; i < 32; i++) { Serial.print(inbuf[i],HEX); Serial.print(" "); }
-
 		Serial.println("");
+
+		// size is w/o header+CRC -> add 2 bytes header
+		total_size = inbuf[1]+2;
+		Serial.print("CRC offset: "); Serial.print(total_size);
+		uint8_t crc[3] = { 0x55, 0x55, 0x55 };
+
+		// calculate & compare CRC
+		btLeCrc( inbuf, total_size, crc );
+		for (int i = 0; i < 3; i++)
+			if (inbuf[total_size+i] != crc[i])
+				return false;
 
 		// TODO: short delay needed here?
 		delay(20);
 	}
+
+	*len = total_size;
+	*buf = inbuf;
 
 	return true;
 }
