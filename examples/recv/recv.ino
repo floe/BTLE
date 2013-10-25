@@ -16,9 +16,18 @@ void setup() {
 }
 
 void loop() {
+  
   uint8_t len;
-  uint8_t buf[32];
-  btle.listen(buf,&len);
+  uint8_t* buf;
+  
+  Serial.print("Listening... ");
+  
+  if (btle.listen(&buf,&len)) {
+    Serial.print("Got payload: ");
+    for (uint8_t i = 0; i < len; i++) { Serial.print(buf[i],HEX); Serial.print(" "); }
+  }
+  
+  Serial.println("done.");
   btle.hopChannel();
 }
 

@@ -166,23 +166,15 @@ bool BTLE::listen( uint8_t** buf, uint8_t* len ) {
 		for (uint8_t i = 0; i < sizeof(inbuf); i++) inbuf[i] = swapbits(inbuf[i]);
 		btLeWhiten( inbuf, sizeof(inbuf), btLeWhitenStart( channel[current] ) );
 		
-		Serial.print("Got payload: ");
-		for (uint8_t i = 0; i < 32; i++) { Serial.print(inbuf[i],HEX); Serial.print(" "); }
-		Serial.println("");
-
 		// size is w/o header+CRC -> add 2 bytes header
 		total_size = inbuf[1]+2;
-		Serial.print("CRC offset: "); Serial.print(total_size);
 		uint8_t crc[3] = { 0x55, 0x55, 0x55 };
 
 		// calculate & compare CRC
 		btLeCrc( inbuf, total_size, crc );
 		for (uint8_t i = 0; i < 3; i++)
-			if (inbuf[total_size+i] != crc[i])
+			if (inbuf[total_size+i] != swapbits(crc[i]))
 				return false;
-
-		// TODO: short delay needed here?
-		delay(20);
 	}
 
 	*len = total_size;
