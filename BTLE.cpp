@@ -38,8 +38,9 @@ BTLE::BTLE( RF24* _radio ):
 { }
 
 // set BTLE-compatible radio parameters
-void BTLE::begin() {
+void BTLE::begin( const char* _name ) {
 
+	name = _name;
 	radio->begin();
 
 	// set standard parameters
@@ -88,65 +89,65 @@ void BTLE::hopChannel() {
 }
 
 // broadcast an advertisement packet
-bool BTLE::advertise( const char* name, void* buf, uint8_t buflen ) {
+bool BTLE::advertise( void* buf, uint8_t buflen ) {
 
 	// name & total payload size
 	uint8_t namelen = strlen(name);
 	uint8_t pls = 0;
 
-	// add packet header
-	outbuf[pls++] = 0x42;  // PDU type: ADV_NONCONN_IND, TX address is random
-	outbuf[pls++] = 0x00;  // payload size (will be updated after pkt assembly)
-
 	// insert pseudo-random MAC address
-	outbuf[pls++] = ((__TIME__[6]-0x30) << 4) | (__TIME__[7]-0x30);
-	outbuf[pls++] = ((__TIME__[3]-0x30) << 4) | (__TIME__[4]-0x30);
-	outbuf[pls++] = ((__TIME__[0]-0x30) << 4) | (__TIME__[1]-0x30);
-	outbuf[pls++] = ((__DATE__[4]-0x30) << 4) | (__DATE__[5]-0x30);
-	outbuf[pls++] = month(__DATE__);
-	outbuf[pls++] = ((__DATE__[9]-0x30) << 4) | (__DATE__[10]-0x30);
+	buffer.mac[0] = ((__TIME__[6]-0x30) << 4) | (__TIME__[7]-0x30);
+	buffer.mac[1] = ((__TIME__[3]-0x30) << 4) | (__TIME__[4]-0x30);
+	buffer.mac[2] = ((__TIME__[0]-0x30) << 4) | (__TIME__[1]-0x30);
+	buffer.mac[3] = ((__DATE__[4]-0x30) << 4) | (__DATE__[5]-0x30);
+	buffer.mac[4] = month(__DATE__);
+	buffer.mac[5] = ((__DATE__[9]-0x30) << 4) | (__DATE__[10]-0x30);
 
 	// add device descriptor chunk
-	outbuf[pls++] = 0x02;  // chunk size: 2
-	outbuf[pls++] = 0x01;  // chunk type: device flags
-	outbuf[pls++] = 0x05;  // flags: LE-only, limited discovery mode
+	chunk(buffer,pls)->size = 0x02;  // chunk size: 2
+	chunk(buffer,pls)->type = 0x01;  // chunk type: device flags
+	chunk(buffer,pls)->data[0]= 0x05;  // flags: LE-only, limited discovery mode
+	pls += 3;
 
 	// add "complete name" chunk
-	outbuf[pls++] = namelen+1;  // chunk size
-	outbuf[pls++] = 0x09;       // chunk type
+	chunk(buffer,pls)->size = namelen+1;  // chunk size
+	chunk(buffer,pls)->type = 0x09;       // chunk type
 	for (uint8_t i = 0; i < namelen; i++)
-		outbuf[pls++] = name[i];
+		chunk(buffer,pls)->data[i] = name[i];
+	pls += namelen+2;
 
 	// add custom data, if applicable
 	if (buflen > 0) {
-		outbuf[pls++] = buflen+1;  // chunk size
-		outbuf[pls++] = 0xFF;      // chunk type
+		chunk(buffer,pls)->size = buflen+1;  // chunk size
+		chunk(buffer,pls)->type = 0xFF;      // chunk type
 		for (uint8_t i = 0; i < buflen; i++)
-			outbuf[pls++] = ((uint8_t*)buf)[i];
+			chunk(buffer,pls)->data[i] = ((uint8_t*)buf)[i];
+		pls += buflen+2;
 	}
 
 	// add CRC placeholder
-	outbuf[pls++] = 0x55;
-	outbuf[pls++] = 0x55;
-	outbuf[pls++] = 0x55;
+	buffer.payload[pls++] = 0x55;
+	buffer.payload[pls++] = 0x55;
+	buffer.payload[pls++] = 0x55;
 
-	// total payload size must be 32 bytes or less
-	if (pls > 32)
+	// total payload size must be 24 bytes or less
+	if (pls > 24)
 		return false;
-	
-	// set final payload size in header (excluding CRC and header itself)
-	outbuf[1] = pls - 5;
+
+	// assemble header
+	buffer.pdu_type = 0x42;    // PDU type: ADV_NONCONN_IND, TX address is random
+	buffer.pl_size = pls + 3;  // set final payload size in header incl. MAC excl. CRC
 
 	// encode for current logical channel, flush buffers, send
-	btLePacketEncode( outbuf, pls, channel[current] );
+	btLePacketEncode( (uint8_t*)&buffer, pls, channel[current] );
 	radio->stopListening();
-	radio->write( outbuf, pls );
+	radio->write( (uint8_t*)&buffer, pls );
 
 	return true;
 }
 
 // listen for advertisement packets
-bool BTLE::listen( uint8_t** buf, uint8_t* len ) {
+bool BTLE::listen() {
 
 	radio->startListening();
 	delay(20);
@@ -156,15 +157,16 @@ bool BTLE::listen( uint8_t** buf, uint8_t* len ) {
 
 	bool done = false;
 	uint8_t total_size = 0;
+	uint8_t* inbuf = (uint8_t*)&buffer;
 
 	while (!done) {
 
 		// fetch the payload, and check if there are more left
-		done = radio->read( inbuf, sizeof(inbuf) );
+		done = radio->read( inbuf, sizeof(buffer) );
 
 		// decode: swap bit order, un-whiten
-		for (uint8_t i = 0; i < sizeof(inbuf); i++) inbuf[i] = swapbits(inbuf[i]);
-		btLeWhiten( inbuf, sizeof(inbuf), btLeWhitenStart( channel[current] ) );
+		for (uint8_t i = 0; i < sizeof(buffer); i++) inbuf[i] = swapbits(inbuf[i]);
+		btLeWhiten( inbuf, sizeof(buffer), btLeWhitenStart( channel[current] ) );
 		
 		// size is w/o header+CRC -> add 2 bytes header
 		total_size = inbuf[1]+2;
@@ -176,9 +178,6 @@ bool BTLE::listen( uint8_t** buf, uint8_t* len ) {
 			if (inbuf[total_size+i] != swapbits(crc[i]))
 				return false;
 	}
-
-	*len = total_size;
-	*buf = inbuf;
 
 	return true;
 }
