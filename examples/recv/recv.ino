@@ -12,19 +12,16 @@ void setup() {
   while (!Serial) { }
   Serial.println("BTLE advertisement receiver");
 
-  btle.begin();
+  btle.begin("");
 }
 
 void loop() {
-  
-  uint8_t len;
-  uint8_t* buf;
-  
+    
   Serial.print("Listening... ");
   
-  if (btle.listen(&buf,&len)) {
+  if (btle.listen()) {
     Serial.print("Got payload: ");
-    for (uint8_t i = 0; i < len; i++) { Serial.print(buf[i],HEX); Serial.print(" "); }
+    for (uint8_t i = 0; i < (btle.buffer.pl_size)-6; i++) { Serial.print(btle.buffer.payload[i],HEX); Serial.print(" "); }
   }
   
   Serial.println("done.");
