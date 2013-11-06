@@ -10,26 +10,16 @@
 #include <btle.inc>
 
 
-static uint8_t channel[3]   = {37,38,39};  // logical BTLE channel number (37-39)
-static uint8_t frequency[3] = { 2,26,80};  // physical frequency (2400+x MHz)
+const uint8_t channel[3]   = {37,38,39};  // logical BTLE channel number (37-39)
+const uint8_t frequency[3] = { 2,26,80};  // physical frequency (2400+x MHz)
 
 
-// helper function to extract month number from build date
-uint8_t month(const char* date) {
-  if ((date[0] == 'J') && (date[1] == 'a')) return 0x01;
-  if ((date[0] == 'F')                    ) return 0x02;
-  if ((date[0] == 'M') && (date[2] == 'r')) return 0x03;
-  if ((date[0] == 'A') && (date[1] == 'p')) return 0x04;
-  if ((date[0] == 'M') && (date[2] == 'y')) return 0x05;
-  if ((date[0] == 'J') && (date[2] == 'n')) return 0x06;
-  if ((date[0] == 'J') && (date[2] == 'l')) return 0x07;
-  if ((date[0] == 'A') && (date[1] == 'u')) return 0x08;
-  if ((date[0] == 'S')                    ) return 0x09;
-  if ((date[0] == 'O')                    ) return 0x10;
-  if ((date[0] == 'N')                    ) return 0x11;
-  if ((date[0] == 'D')                    ) return 0x12;
-  return 0x00;
-}
+// This is a rather convoluted hack to extract the month number from the build date in
+// the __DATE__ macro using a small hash function + lookup table. Since all inputs are
+// const, this can be fully resolved by the compiler and saves over 200 bytes of code.
+#define month(m) month_lookup[ (( ((( (m[0] % 24) * 13) + m[1]) % 24) * 13) + m[2]) % 24 ]
+const uint8_t month_lookup[24] = { 0,6,0,4,0,1,0,17,0,8,0,0,3,0,0,0,18,2,16,5,9,0,1,7 };
+
 
 // constructor
 BTLE::BTLE( RF24* _radio ):
