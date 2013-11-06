@@ -139,9 +139,9 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 	buffer.pl_size = pls + 3;  // set final payload size in header incl. MAC excl. CRC
 
 	// encode for current logical channel, flush buffers, send
-	btLePacketEncode( (uint8_t*)&buffer, pls, channel[current] );
+	btLePacketEncode( (uint8_t*)&buffer, pls+8, channel[current] );
 	radio->stopListening();
-	radio->write( (uint8_t*)&buffer, pls );
+	radio->write( (uint8_t*)&buffer, pls+8 );
 
 	return true;
 }

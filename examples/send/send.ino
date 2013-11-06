@@ -12,11 +12,12 @@ void setup() {
   while (!Serial) { }
   Serial.println("BTLE advertisement sender");
 
-  btle.begin();
+  btle.begin("foobar");
 }
 
 void loop() {
-  btle.advertise("foobar",0,0);
+  btle.advertise(0,0);
   btle.hopChannel();
+  Serial.print(".");
 }
 
