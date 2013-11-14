@@ -49,23 +49,7 @@ void BTLE::begin( const char* _name ) {
 	radio->powerUp();
 }
 
-/* // set a specific MAC address
-void BTLE::setMAC( uint8_t buf[6] ) {
-	for (int i = 0; i < 6; i++)
-		outbuf[i+2] = buf[i];
-}
-
-// set pseudo-random MAC derived from build date
-void BTLE::setBuildMAC() {
-	outbuf[2] = ((__TIME__[6]-0x30) << 4) | (__TIME__[7]-0x30);
-	outbuf[3] = ((__TIME__[3]-0x30) << 4) | (__TIME__[4]-0x30);
-	outbuf[4] = ((__TIME__[0]-0x30) << 4) | (__TIME__[1]-0x30);
-	outbuf[5] = ((__DATE__[4]-0x30) << 4) | (__DATE__[5]-0x30);
-	outbuf[6] = month(__DATE__);
-	outbuf[7] = ((__DATE__[9]-0x30) << 4) | (__DATE__[10]-0x30);
-} */
-
-// set the current channel (from 36 to 38)
+// set the current channel (from 37 to 39)
 void BTLE::setChannel( uint8_t num ) {
 	current = min(2,max(0,num-37));
 	radio->setChannel( frequency[current] );

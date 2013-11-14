@@ -46,9 +46,6 @@ class BTLE {
 
 		void begin( const char* _name ); // set BTLE-compatible radio parameters & name
 
-		/*void setMAC( uint8_t buf[6] ); // set a specific MAC address
-		void setBuildMAC();            // set pseudo-random MAC derived from build date */
-
 		void setChannel( uint8_t num ); // set the current channel (from 36 to 38)
 		void hopChannel();              // hop to the next channel
 
