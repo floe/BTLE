@@ -156,3 +156,24 @@ bool BTLE::listen() {
 	return true;
 }
 
+
+// see BT Core Spec 4.0, Section 6.B.3.2
+void BTLE::whiten( uint8_t* buf, uint8_t len ) {
+
+	// initialize LFSR with current channel, set bit 6
+	uint8_t lfsr = channel[current] | 0x40;
+
+	while (len--) {
+		uint8_t res = 0;
+		// LFSR in "wire bit order"
+		for (uint8_t i = 1; i; i <<= 1) {
+			if (lfsr & 0x01) {
+				lfsr ^= 0x88;
+				res |= i;
+			}
+			lfsr >>= 1;
+		}
+		*(buf++) ^= res;
+	}
+}
+
