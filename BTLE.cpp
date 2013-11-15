@@ -148,12 +148,12 @@ bool BTLE::listen() {
 		
 		// size is w/o header+CRC -> add 2 bytes header
 		total_size = inbuf[1]+2;
-		uint8_t crc[3] = { 0x55, 0x55, 0x55 };
+		uint8_t in_crc[3];
 
 		// calculate & compare CRC
-		btLeCrc( inbuf, total_size, crc );
+		crc( inbuf, total_size, in_crc );
 		for (uint8_t i = 0; i < 3; i++)
-			if (inbuf[total_size+i] != swapbits(crc[i]))
+			if (inbuf[total_size+i] != in_crc[i])
 				return false;
 	}
 
