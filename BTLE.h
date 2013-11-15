@@ -57,6 +57,7 @@ class BTLE {
 	private:
 
 		void whiten( uint8_t* buf, uint8_t len );
+		void crc( const uint8_t* buf, uint8_t len, uint8_t* dst );
 
 		RF24* radio;       // pointer to the RF24 object managing the radio
 		uint8_t current;   // current channel index
