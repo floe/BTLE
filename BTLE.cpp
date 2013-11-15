@@ -7,7 +7,6 @@
 */
 
 #include <BTLE.h>
-#include <btle.inc>
 
 
 const uint8_t channel[3]   = {37,38,39};  // logical BTLE channel number (37-39)
@@ -19,6 +18,28 @@ const uint8_t frequency[3] = { 2,26,80};  // physical frequency (2400+x MHz)
 // const, this can be fully resolved by the compiler and saves over 200 bytes of code.
 #define month(m) month_lookup[ (( ((( (m[0] % 24) * 13) + m[1]) % 24) * 13) + m[2]) % 24 ]
 const uint8_t month_lookup[24] = { 0,6,0,4,0,1,0,17,0,8,0,0,3,0,0,0,18,2,16,5,9,0,1,7 };
+
+
+// change buffer contents to "wire bit order"
+void swapbuf( uint8_t* buf, uint8_t len ) {
+
+	while (len--) {
+
+		uint8_t a = *buf;
+		uint8_t v = 0;
+
+		if (a & 0x80) v |= 0x01;
+		if (a & 0x40) v |= 0x02;
+		if (a & 0x20) v |= 0x04;
+		if (a & 0x10) v |= 0x08;
+		if (a & 0x08) v |= 0x10;
+		if (a & 0x04) v |= 0x20;
+		if (a & 0x02) v |= 0x40;
+		if (a & 0x01) v |= 0x80;
+
+		*(buf++) = v;
+	}
+}
 
 
 // constructor
@@ -113,7 +134,7 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 
 	// whiten header+MAC+payload+CRC, swap bit order
 	whiten( outbuf, pls+11 );
-	for (int i = 0; i < pls+11; i++) outbuf[i] = swapbits(outbuf[i]);
+	swapbuf( outbuf, pls+11 );
 
 	// flush buffers and send
 	radio->stopListening();
@@ -141,7 +162,7 @@ bool BTLE::listen() {
 		done = radio->read( inbuf, sizeof(buffer) );
 
 		// decode: swap bit order, un-whiten
-		for (uint8_t i = 0; i < sizeof(buffer); i++) inbuf[i] = swapbits(inbuf[i]);
+		swapbuf( inbuf, sizeof(buffer) );
 		whiten( inbuf, sizeof(buffer) );
 		
 		// size is w/o header+CRC -> add 2 bytes header
