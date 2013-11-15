@@ -114,6 +114,10 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 
 	// encode for current logical channel, flush buffers, send
 	btLePacketEncode( (uint8_t*)&buffer, pls+8, channel[current] );
+
+	whiten( (uint8_t*)&buffer, pls+8 );
+	for (int i = 0; i < pls+8; i++) ((uint8_t*)&buffer)[i] = swapbits(((uint8_t*)&buffer)[i]);
+
 	radio->stopListening();
 	radio->write( (uint8_t*)&buffer, pls+8 );
 
