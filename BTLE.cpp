@@ -99,27 +99,25 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 		pls += buflen+2;
 	}
 
-	// add CRC placeholder
-	buffer.payload[pls++] = 0x55;
-	buffer.payload[pls++] = 0x55;
-	buffer.payload[pls++] = 0x55;
-
-	// total payload size must be 24 bytes or less
-	if (pls > 24)
+	// total payload size must be 21 bytes or less
+	if (pls > 21)
 		return false;
 
 	// assemble header
 	buffer.pdu_type = 0x42;    // PDU type: ADV_NONCONN_IND, TX address is random
-	buffer.pl_size = pls + 3;  // set final payload size in header incl. MAC excl. CRC
+	buffer.pl_size = pls+6;    // set final payload size in header incl. MAC
 
-	// encode for current logical channel, flush buffers, send
-	btLePacketEncode( (uint8_t*)&buffer, pls+8, channel[current] );
+	// calculate CRC over header+MAC+payload, append after payload
+	uint8_t* outbuf = (uint8_t*)&buffer;
+	crc( outbuf, pls+8, outbuf+pls+8);
 
-	whiten( (uint8_t*)&buffer, pls+8 );
-	for (int i = 0; i < pls+8; i++) ((uint8_t*)&buffer)[i] = swapbits(((uint8_t*)&buffer)[i]);
+	// whiten header+MAC+payload+CRC, swap bit order
+	whiten( outbuf, pls+11 );
+	for (int i = 0; i < pls+11; i++) outbuf[i] = swapbits(outbuf[i]);
 
+	// flush buffers and send
 	radio->stopListening();
-	radio->write( (uint8_t*)&buffer, pls+8 );
+	radio->write( outbuf, pls+11 );
 
 	return true;
 }
