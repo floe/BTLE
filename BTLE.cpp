@@ -21,7 +21,9 @@ const uint8_t month_lookup[24] = { 0,6,0,4,0,1,0,17,0,8,0,0,3,0,0,0,18,2,16,5,9,
 
 
 // change buffer contents to "wire bit order"
-void swapbuf( uint8_t* buf, uint8_t len ) {
+void BTLE::swapbuf( uint8_t len ) {
+
+	uint8_t* buf = (uint8_t*)&buffer;
 
 	while (len--) {
 
@@ -130,11 +132,11 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 
 	// calculate CRC over header+MAC+payload, append after payload
 	uint8_t* outbuf = (uint8_t*)&buffer;
-	crc( outbuf, pls+8, outbuf+pls+8);
+	crc( pls+8, outbuf+pls+8);
 
 	// whiten header+MAC+payload+CRC, swap bit order
-	whiten( outbuf, pls+11 );
-	swapbuf( outbuf, pls+11 );
+	whiten( pls+11 );
+	swapbuf( pls+11 );
 
 	// flush buffers and send
 	radio->stopListening();
@@ -162,15 +164,15 @@ bool BTLE::listen() {
 		done = radio->read( inbuf, sizeof(buffer) );
 
 		// decode: swap bit order, un-whiten
-		swapbuf( inbuf, sizeof(buffer) );
-		whiten( inbuf, sizeof(buffer) );
+		swapbuf( sizeof(buffer) );
+		whiten( sizeof(buffer) );
 		
 		// size is w/o header+CRC -> add 2 bytes header
 		total_size = inbuf[1]+2;
 		uint8_t in_crc[3];
 
 		// calculate & compare CRC
-		crc( inbuf, total_size, in_crc );
+		crc( total_size, in_crc );
 		for (uint8_t i = 0; i < 3; i++)
 			if (inbuf[total_size+i] != in_crc[i])
 				return false;
@@ -181,7 +183,9 @@ bool BTLE::listen() {
 
 
 // see BT Core Spec 4.0, Section 6.B.3.2
-void BTLE::whiten( uint8_t* buf, uint8_t len ) {
+void BTLE::whiten( uint8_t len ) {
+
+	uint8_t* buf = (uint8_t*)&buffer;
 
 	// initialize LFSR with current channel, set bit 6
 	uint8_t lfsr = channel[current] | 0x40;
@@ -201,7 +205,9 @@ void BTLE::whiten( uint8_t* buf, uint8_t len ) {
 }
 
 // see BT Core Spec 4.0, Section 6.B.3.1.1
-void BTLE::crc( const uint8_t* buf, uint8_t len, uint8_t* dst ) {
+void BTLE::crc( uint8_t len, uint8_t* dst ) {
+
+	uint8_t* buf = (uint8_t*)&buffer;
 
 	// initialize 24-bit shift register in "wire bit order"
 	// dst[0] = bits 23-16, dst[1] = bits 15-8, dst[2] = bits 7-0
