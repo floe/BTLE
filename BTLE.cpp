@@ -140,7 +140,7 @@ bool BTLE::listen() {
 
 		// decode: swap bit order, un-whiten
 		for (uint8_t i = 0; i < sizeof(buffer); i++) inbuf[i] = swapbits(inbuf[i]);
-		btLeWhiten( inbuf, sizeof(buffer), btLeWhitenStart( channel[current] ) );
+		whiten( inbuf, sizeof(buffer) );
 		
 		// size is w/o header+CRC -> add 2 bytes header
 		total_size = inbuf[1]+2;
