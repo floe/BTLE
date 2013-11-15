@@ -5,6 +5,39 @@
 uint8_t testbuf[32] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
 
+// see BT Core Spec 4.0, Section 6.B.3.1.1
+void myCrc(const uint8_t* data, uint8_t len, uint8_t* dst) {
+
+	uint8_t v, t, d;
+
+	while (len--) {
+
+		d = *data++;
+		for (v = 0; v < 8; v++, d >>= 1) {
+
+			// t = bit 23 (highest-value) 
+			t = dst[0] >> 7;
+
+			// left-shift the entire register by one
+			// (dst[0] = bits 23-16, dst[1] = bits 15-8, dst[2] = bits 7-0
+			dst[0] <<= 1;
+			if(dst[1] & 0x80) dst[0] |= 1;
+			dst[1] <<= 1;
+			if(dst[2] & 0x80) dst[1] |= 1;
+			dst[2] <<= 1;
+
+			// if the bit just shifted out (former bit 23)
+			// and the incoming data bit are not equal:
+			// => bit_out ^ bit_in = 1
+			if (t != (d & 1)) {
+				// toggle register bits (=XOR with 1) according to CRC polynom
+				dst[2] ^= 0x5B; // 0b01011011 - x^6+x^4+x^3+x+1
+				dst[1] ^= 0x06; // 0b00000110 - x^10+x^9
+			}
+		}       
+	}
+}
+
 /* uint8_t swapbits(uint8_t a) {
 	uint8_t res;
 	asm volatile(
