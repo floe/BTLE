@@ -1,5 +1,9 @@
 #!/bin/bash
+
+# bring up the host controller
 sudo hciconfig hci0 up
+
+# enable non-connectable undirected advertisements
 sudo hciconfig hci0 leadv 3
 
 # 0x08       opcode group (LE)
