@@ -146,10 +146,10 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 }
 
 // listen for advertisement packets
-bool BTLE::listen() {
+bool BTLE::listen(int timeout) {
 
 	radio->startListening();
-	delay(20);
+	delay(timeout);
 
 	if (!radio->available())
 		return false;

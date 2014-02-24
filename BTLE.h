@@ -50,7 +50,7 @@ class BTLE {
 		void hopChannel();              // hop to the next channel
 
 		bool advertise( void* buf, uint8_t len ); // broadcast an advertisement packet with optional payload
-		bool listen();                            // listen for advertisement packets (if true: result = buffer)
+		bool listen( int timeout = 100 );         // listen for advertisement packets (if true: result = buffer)
 
 		btle_adv_pdu buffer;  // buffer for received BTLE packet (also used for outgoing!)
 
