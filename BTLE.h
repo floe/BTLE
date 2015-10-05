@@ -12,6 +12,22 @@
 #include "Arduino.h"
 #include <RF24.h>
 
+// float as used on the nRF8001 and nRF51822 platforms
+// and on the "nRF Master Control Panel" and "nRF Temp 2.0" apps.
+// This float representation has the first 8 bits as a base-10 exponent
+// and the last 24 bits as the mantissa.
+typedef int32_t nRF_Float;
+
+// Service UUIDs used on the nRF8001 and nRF51822 platforms
+#define NRF_TEMPERATURE_SERVICE_UUID		0x1809
+#define NRF_BATTERY_SERVICE_UUID			0x180F
+#define NRF_DEVICE_INFORMATION_SERVICE_UUID 0x180A
+
+// helper struct for sending temperature as BT service data
+struct nrf_service_data {
+	int16_t   service_uuid;
+	nRF_Float value;
+};
 
 // advertisement PDU
 struct btle_adv_pdu {
@@ -44,12 +60,22 @@ class BTLE {
 
 		BTLE( RF24* _radio );
 
+		// convert an arduino float to a nRF_Float
+		static nRF_Float to_nRF_Float(float t);
+
 		void begin( const char* _name ); // set BTLE-compatible radio parameters & name
 
 		void setChannel( uint8_t num ); // set the current channel (from 36 to 38)
 		void hopChannel();              // hop to the next channel
 
-		bool advertise( void* buf, uint8_t len ); // broadcast an advertisement packet with optional payload
+		// Broadcast an advertisement packet with a specific data type
+		// Standardized data types can be seen here: 
+		// https://www.bluetooth.org/en-us/specification/assigned-numbers/generic-access-profile
+		bool advertise( uint8_t data_type, void* buf, uint8_t len ); 
+
+		// Broadcast an advertisement packet with optional payload
+		// Data type will be 0xFF (Manufacturer Specific Data)
+		bool advertise( void* buf, uint8_t len ); 
 		bool listen( int timeout = 100 );         // listen for advertisement packets (if true: result = buffer)
 
 		btle_adv_pdu buffer;  // buffer for received BTLE packet (also used for outgoing!)

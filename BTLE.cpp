@@ -50,6 +50,16 @@ BTLE::BTLE( RF24* _radio ):
 	current(0)
 { }
 
+// Simple converter from arduino float to a nRF_Float.
+// Supports values from -167772 to +167772, with two decimal places.
+nRF_Float 
+BTLE::to_nRF_Float(float t) {
+  int32_t ret;
+  int32_t exponent = -2;
+  ret = ((exponent & 0xff) << 24) | (((int32_t)(t * 100)) & 0xffffff);
+  return ret;
+}
+
 // set BTLE-compatible radio parameters
 void BTLE::begin( const char* _name ) {
 
@@ -85,9 +95,17 @@ void BTLE::hopChannel() {
 	radio->setChannel( frequency[current] );
 }
 
-// broadcast an advertisement packet
-bool BTLE::advertise( void* buf, uint8_t buflen ) {
 
+// Broadcast an advertisement packet with optional payload
+// Data type will be 0xFF (Manufacturer Specific Data)
+bool BTLE::advertise( void* buf, uint8_t buflen ) {
+	return advertise(0xFF, buf, buflen);
+}
+
+// Broadcast an advertisement packet with a specific data type
+// Standardized data types can be seen here: 
+// https://www.bluetooth.org/en-us/specification/assigned-numbers/generic-access-profile
+bool BTLE::advertise( uint8_t data_type, void* buf, uint8_t buflen ) {
 	// name & total payload size
 	uint8_t namelen = strlen(name);
 	uint8_t pls = 0;
@@ -116,7 +134,7 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 	// add custom data, if applicable
 	if (buflen > 0) {
 		chunk(buffer,pls)->size = buflen+1;  // chunk size
-		chunk(buffer,pls)->type = 0xFF;      // chunk type
+		chunk(buffer,pls)->type = data_type; // chunk type
 		for (uint8_t i = 0; i < buflen; i++)
 			chunk(buffer,pls)->data[i] = ((uint8_t*)buf)[i];
 		pls += buflen+2;
