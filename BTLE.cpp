@@ -75,7 +75,7 @@ void BTLE::begin( const char* _name ) {
 	radio->setPALevel(RF24_PA_MAX);
 
 	// set advertisement address: 0x8E89BED6 (bit-reversed -> 0x6B7D9171)
-	radio->setAddressSize(4);
+	radio->setAddressWidth(4);
 	radio->openReadingPipe(0,0x6B7D9171);
 	radio->openWritingPipe(  0x6B7D9171);
 
