@@ -75,7 +75,7 @@ void BTLE::begin( const char* _name ) {
 	radio->setPALevel(RF24_PA_MAX);
 
 	// set advertisement address: 0x8E89BED6 (bit-reversed -> 0x6B7D9171)
-	radio->setAddressSize(4);
+	radio->setAddressWidth(4);
 	radio->openReadingPipe(0,0x6B7D9171);
 	radio->openWritingPipe(  0x6B7D9171);
 
@@ -172,14 +172,13 @@ bool BTLE::listen(int timeout) {
 	if (!radio->available())
 		return false;
 
-	bool done = false;
 	uint8_t total_size = 0;
 	uint8_t* inbuf = (uint8_t*)&buffer;
 
-	while (!done) {
+	while (radio->available()) {
 
 		// fetch the payload, and check if there are more left
-		done = radio->read( inbuf, sizeof(buffer) );
+		radio->read( inbuf, sizeof(buffer) );
 
 		// decode: swap bit order, un-whiten
 		swapbuf( sizeof(buffer) );
