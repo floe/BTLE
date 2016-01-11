@@ -2,7 +2,7 @@ BTLE
 ====
 
 This is a fork of floe's BTLE library; it has some improvements to make it able
-to mimick nRF8001 and nRF51822 beacon packets. 
+to mimick nRF8001 and nRF51822 beacon packets and to work with maintained RF24.
 More info on http://simonebaracchi.eu/posts/temperature-beacon/ .
 
 Arduino library for basic Bluetooth Low Energy support using the nRF24L01+
