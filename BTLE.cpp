@@ -43,6 +43,7 @@ void BTLE::swapbuf( uint8_t len ) {
 	}
 }
 
+uint8_t BTLE::counter = 0;
 
 // constructor
 BTLE::BTLE( RF24* _radio ):
@@ -64,6 +65,7 @@ BTLE::to_nRF_Float(float t) {
 void BTLE::begin( const char* _name ) {
 
 	name = _name;
+  id = BTLE::counter++;
 	radio->begin();
 
 	// set standard parameters
@@ -115,7 +117,7 @@ bool BTLE::advertise( uint8_t data_type, void* buf, uint8_t buflen ) {
 	buffer.mac[1] = ((__TIME__[3]-0x30) << 4) | (__TIME__[4]-0x30);
 	buffer.mac[2] = ((__TIME__[0]-0x30) << 4) | (__TIME__[1]-0x30);
 	buffer.mac[3] = ((__DATE__[4]-0x30) << 4) | (__DATE__[5]-0x30);
-	buffer.mac[4] = month(__DATE__);
+	buffer.mac[4] = id; // month(__DATE__);
 	buffer.mac[5] = ((__DATE__[9]-0x30) << 4) | (__DATE__[10]-0x30) | 0xC0; // static random address should have two topmost bits set
 
 	// add device descriptor chunk
