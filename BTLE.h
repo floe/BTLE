@@ -89,6 +89,9 @@ class BTLE {
 		RF24* radio;       // pointer to the RF24 object managing the radio
 		uint8_t current;   // current channel index
     const char* name;  // name of local device
+
+    static uint8_t counter;
+    uint8_t id;        // id of ble instance
 };
 
 #endif // _BTLE_H_
