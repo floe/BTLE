@@ -50,9 +50,6 @@ struct btle_pdu_chunk {
 	uint8_t data[];
 };
 
-// helper macro to access chunk at specific offset
-#define chunk(x,y) ((btle_pdu_chunk*)(x.payload+y))
-
 
 class BTLE {
 
@@ -80,6 +77,9 @@ class BTLE {
 
 		btle_adv_pdu buffer;  // buffer for received BTLE packet (also used for outgoing!)
 
+		void preparePacket();
+		bool addChunk(uint8_t chunk_type, uint8_t buflen, void* buf);
+		void transmitPacket();
 	private:
 
 		void whiten( uint8_t len );
