@@ -149,7 +149,9 @@ void BTLE::preparePacket() {
 	addChunk(0x01, 1, &flags);
 	
 	// add "complete name" chunk
-	addChunk(0x09, strlen(name), name);
+	if (strlen(name) > 0) {
+		addChunk(0x09, strlen(name), name);
+	}
 }
 
 void BTLE::transmitPacket() {
