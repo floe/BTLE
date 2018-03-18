@@ -78,7 +78,7 @@ class BTLE {
 		btle_adv_pdu buffer;  // buffer for received BTLE packet (also used for outgoing!)
 
 		void preparePacket();
-		bool addChunk(uint8_t chunk_type, uint8_t buflen, void* buf);
+		bool addChunk(uint8_t chunk_type, uint8_t buflen, const void* buf);
 		void transmitPacket();
 	private:
 

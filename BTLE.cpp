@@ -102,7 +102,7 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 	return advertise(0xFF, buf, buflen);
 }
 
-bool BTLE::addChunk(uint8_t chunk_type, uint8_t buflen, void* buf) {
+bool BTLE::addChunk(uint8_t chunk_type, uint8_t buflen, const void* buf) {
 	if (buffer.pl_size > 27)
 		return false;
 	btle_pdu_chunk* chunk = (btle_pdu_chunk*) (buffer.payload+buffer.pl_size-6);
