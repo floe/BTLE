@@ -103,7 +103,7 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 }
 
 bool BTLE::addChunk(uint8_t chunk_type, uint8_t buflen, const void* buf) {
-	if (buffer.pl_size > 27)
+	if (buffer.pl_size + buflen + 2 > 21 + 6) // (buflen+2) is how much this chunk will take, 21 is payload size without crc and 6 is MAC size
 		return false;
 	btle_pdu_chunk* chunk = (btle_pdu_chunk*) (buffer.payload+buffer.pl_size-6);
 	chunk->type = chunk_type;
