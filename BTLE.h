@@ -22,11 +22,31 @@ typedef int32_t nRF_Float;
 #define NRF_TEMPERATURE_SERVICE_UUID		0x1809
 #define NRF_BATTERY_SERVICE_UUID			0x180F
 #define NRF_DEVICE_INFORMATION_SERVICE_UUID 0x180A
+#define NRF_EDDYSTONE_SERVICE_UUID			0xFEAA
+
+#define EDDYSTONE_UID_FRAME_TYPE			0x00
+#define EDDYSTONE_URL_FRAME_TYPE			0x10
+#define EDDYSTONE_TLM_FRAME_TYPE			0x20
+#define EDDYSTONE_EID_FRAME_TYPE			0x30
+
+#define EDDYSTONE_HTTPWWW_URL_SCHEME		0x00  //stands for "http://www."
+#define EDDYSTONE_HTTPSWWW_URL_SCHEME		0x01  //stands for "https://www."
+#define EDDYSTONE_HTTP_URL_SCHEME			0x02  //stands for "http://"
+#define EDDYSTONE_HTTPS_URL_SCHEME			0x03  //stands for "https://"
 
 // helper struct for sending temperature as BT service data
 struct nrf_service_data {
 	int16_t   service_uuid;
 	nRF_Float value;
+};
+
+#define EDDYSTONE_URL_HEADER_LENGTH (5)
+struct eddystone_url_service_data {
+	uint16_t service_uuid;
+	uint8_t frame_type;
+	int8_t tx_power; // take -20 if unsure
+	uint8_t url_scheme;
+	uint8_t encoded_url[11]; //11 bytes at max with current implementation. see https://github.com/google/eddystone/tree/master/eddystone-url#eddystone-url-http-url-encoding
 };
 
 // advertisement PDU
