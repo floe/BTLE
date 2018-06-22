@@ -102,14 +102,37 @@ bool BTLE::advertise( void* buf, uint8_t buflen ) {
 	return advertise(0xFF, buf, buflen);
 }
 
+bool BTLE::addChunk(uint8_t chunk_type, uint8_t buflen, const void* buf) {
+	if (buffer.pl_size + buflen + 2 > 21 + 6) // (buflen+2) is how much this chunk will take, 21 is payload size without crc and 6 is MAC size
+		return false;
+	btle_pdu_chunk* chunk = (btle_pdu_chunk*) (buffer.payload+buffer.pl_size-6);
+	chunk->type = chunk_type;
+	for (uint8_t i = 0; i < buflen; i++)
+		chunk->data[i] = ((uint8_t*)buf)[i];
+	chunk->size = buflen + 1;
+	buffer.pl_size += buflen + 2;
+	return true;
+}
+
 // Broadcast an advertisement packet with a specific data type
 // Standardized data types can be seen here: 
 // https://www.bluetooth.org/en-us/specification/assigned-numbers/generic-access-profile
 bool BTLE::advertise( uint8_t data_type, void* buf, uint8_t buflen ) {
-	// name & total payload size
-	uint8_t namelen = strlen(name);
-	uint8_t pls = 0;
+	preparePacket();
+	
+	// add custom data, if applicable
+	if (buflen > 0) {
+		bool success = addChunk(data_type, buflen, buf);
+		if (!success) {
+			return false;
+		}
+	}
+	
+	transmitPacket();
+	return true;
+}
 
+void BTLE::preparePacket() {
 	// insert pseudo-random MAC address
 	buffer.mac[0] = ((__TIME__[6]-0x30) << 4) | (__TIME__[7]-0x30);
 	buffer.mac[1] = ((__TIME__[3]-0x30) << 4) | (__TIME__[4]-0x30);
@@ -117,50 +140,33 @@ bool BTLE::advertise( uint8_t data_type, void* buf, uint8_t buflen ) {
 	buffer.mac[3] = ((__DATE__[4]-0x30) << 4) | (__DATE__[5]-0x30);
 	buffer.mac[4] = month(__DATE__);
 	buffer.mac[5] = ((__DATE__[9]-0x30) << 4) | (__DATE__[10]-0x30) | 0xC0; // static random address should have two topmost bits set
-
-	// add device descriptor chunk
-	chunk(buffer,pls)->size = 0x02;  // chunk size: 2
-	chunk(buffer,pls)->type = 0x01;  // chunk type: device flags
-	chunk(buffer,pls)->data[0]= 0x05;  // flags: LE-only, limited discovery mode
-	pls += 3;
-
-	// add "complete name" chunk
-	chunk(buffer,pls)->size = namelen+1;  // chunk size
-	chunk(buffer,pls)->type = 0x09;       // chunk type
-	for (uint8_t i = 0; i < namelen; i++)
-		chunk(buffer,pls)->data[i] = name[i];
-	pls += namelen+2;
-
-	// add custom data, if applicable
-	if (buflen > 0) {
-		chunk(buffer,pls)->size = buflen+1;  // chunk size
-		chunk(buffer,pls)->type = data_type; // chunk type
-		for (uint8_t i = 0; i < buflen; i++)
-			chunk(buffer,pls)->data[i] = ((uint8_t*)buf)[i];
-		pls += buflen+2;
-	}
-
-	// total payload size must be 21 bytes or less
-	if (pls > 21)
-		return false;
-
-	// assemble header
+	
 	buffer.pdu_type = 0x42;    // PDU type: ADV_NONCONN_IND, TX address is random
-	buffer.pl_size = pls+6;    // set final payload size in header incl. MAC
+	buffer.pl_size = 6; //including MAC
+	
+	// add device descriptor chunk
+	uint8_t flags = 0x05;
+	addChunk(0x01, 1, &flags);
+	
+	// add "complete name" chunk
+	if (strlen(name) > 0) {
+		addChunk(0x09, strlen(name), name);
+	}
+}
 
+void BTLE::transmitPacket() {
+	uint8_t pls = buffer.pl_size - 6;
 	// calculate CRC over header+MAC+payload, append after payload
 	uint8_t* outbuf = (uint8_t*)&buffer;
 	crc( pls+8, outbuf+pls+8);
-
+	
 	// whiten header+MAC+payload+CRC, swap bit order
 	whiten( pls+11 );
 	swapbuf( pls+11 );
-
+	
 	// flush buffers and send
 	radio->stopListening();
 	radio->write( outbuf, pls+11 );
-
-	return true;
 }
 
 // listen for advertisement packets
